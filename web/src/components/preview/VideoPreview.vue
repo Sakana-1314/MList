@@ -73,17 +73,20 @@ function browserPlaysHevc(): boolean {
 }
 const hevcPlayable = browserPlaysHevc()
 
-const codecOptions = computed<SelectOption[]>(() => {
-  const server = info.value?.transcode_codecs ?? ['h264']
-  const opts: SelectOption[] = [{ value: 'h264', label: 'H.264' }]
-  if (server.includes('h265') && hevcPlayable) opts.push({ value: 'h265', label: 'H.265 / HEVC' })
-  return opts
-})
+/** 服务器能编码、浏览器也能解码 HEVC 时才提供 H.265 */
+const hevcAvailable = computed(() => hevcPlayable && (info.value?.transcode_codecs ?? []).includes('h265'))
 
-/** 实际使用的编码：偏好不可用时回退 H.264 */
-const codec = computed<VideoCodec>(() =>
-  codecOptions.value.some((o) => o.value === prefs.videoCodec) ? prefs.videoCodec : 'h264',
-)
+const codecOptions = computed<SelectOption[]>(() => [
+  ...(hevcAvailable.value ? [{ value: 'h265', label: 'H.265 / HEVC' }] : []),
+  { value: 'h264', label: 'H.264' },
+])
+
+/** 实际使用的编码：默认 HEVC；所选编码不可用时回退到可用的默认编码 */
+const codec = computed<VideoCodec>(() => {
+  const pref = prefs.transcodeCodec
+  if (pref === 'h264' || (pref === 'h265' && hevcAvailable.value)) return pref
+  return hevcAvailable.value ? 'h265' : 'h264'
+})
 
 const transcoding = computed(() => mode.value !== 'direct' || audioTrack.value !== 0)
 
@@ -220,6 +223,10 @@ async function apply(startAt = 0, recreating = false): Promise<void> {
       inst.on(Hls.Events.MANIFEST_PARSED, () => {
         void v.play().catch(() => {})
       })
+      // hls.js does not reliably honour startPosition for these on-demand
+      // playlists; seek explicitly so switching quality / bitrate / codec
+      // continues where playback was.
+      seekWhenReady(v, startAt)
       inst.loadSource(playlist)
       inst.attachMedia(v)
       hls.value = inst
@@ -253,7 +260,7 @@ function onBitrateChange(k: number): void {
 }
 
 function onCodecChange(c: VideoCodec): void {
-  prefs.videoCodec = c
+  prefs.transcodeCodec = c
   if (transcoding.value) void apply(currentTime())
 }
 

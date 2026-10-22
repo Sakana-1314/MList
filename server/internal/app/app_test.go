@@ -1505,6 +1505,15 @@ func TestMedia(t *testing.T) {
 	if tc["playlist"] != "/api/v1/media/hls/"+id+"/index.m3u8" || tc["duration"].(float64) < 2.5 {
 		t.Fatalf("transcode: %v", tc)
 	}
+	// Without a codec the server picks HEVC when it can encode it.
+	codecs := decode[obj](t, e.do("GET", "/api/v1/media/info?path="+q("/可写/clip.mp4"), alice, nil))["transcode_codecs"].([]any)
+	wantCodec := "h264"
+	if slices.Contains(codecs, any("h265")) {
+		wantCodec = "h265"
+	}
+	if tc["codec"] != wantCodec {
+		t.Fatalf("default codec %v, want %s (server codecs %v)", tc["codec"], wantCodec, codecs)
+	}
 	rec = e.do("GET", tc["playlist"].(string), alice, nil)
 	expect(t, rec, 200)
 	if rec.Header().Get("Content-Type") != "application/vnd.apple.mpegurl" ||

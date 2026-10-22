@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
 )
@@ -33,6 +34,15 @@ func (s *Service) hasEncoder(name string) bool {
 		}
 	})
 	return s.encoders[name]
+}
+
+// DefaultCodec is the codec used when a request does not name one: HEVC when
+// the server can encode it (smaller segments at the same quality), else H.264.
+func (s *Service) DefaultCodec() string {
+	if slices.Contains(s.Codecs(), CodecH265) {
+		return CodecH265
+	}
+	return CodecH264
 }
 
 // Codecs lists the output codecs transcode sessions can produce on this

@@ -107,7 +107,7 @@ func (a *API) mediaInfo(c *gin.Context) {
 
 // @Summary     创建转码会话
 // @Description 为视频创建 HLS 会话，分片按需转码。
-// @Description quality 可选 original、1080p、720p、480p；bitrate 为视频码率（kbps，0 为自动）；codec 为输出编码 h264 或 h265。
+// @Description quality 可选 original、1080p、720p、480p；bitrate 为视频码率（kbps，0 为自动）；codec 为输出编码 h264 或 h265（省略时默认 h265，服务器不支持 HEVC 时为 h264）。
 // @Description audio_track 为音轨序号。返回会话 ID 与播放列表地址。
 // @Tags     媒体
 // @Accept   json
