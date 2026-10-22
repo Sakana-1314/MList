@@ -65,7 +65,7 @@ func hlsEnv(t *testing.T, o hlsSettings) *testEnv {
 
 func createSession(t *testing.T, env *testEnv, user uint, p, quality string, audio int) *hlsSession {
 	t.Helper()
-	se, err := env.svc.CreateSession(context.Background(), user, fmt.Sprint("u", user), p, "/v/"+filepath.Base(p), stat(t, p), TranscodeOptions{Quality: quality, Audio: audio})
+	se, err := env.svc.CreateSession(context.Background(), user, fmt.Sprint("u", user), p, "/v/"+filepath.Base(p), stat(t, p), TranscodeOptions{Quality: quality, Codec: CodecH264, Audio: audio})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -826,8 +826,19 @@ func TestHLSCodecAndBitrate(t *testing.T) {
 		t.Fatal(err)
 	}
 	auto := createSession(t, env, 1, src, "480p", 0)
-	if low.ID == high.ID || low.ID == auto.ID || auto.Codec != CodecH264 {
-		t.Fatal("bitrate must be part of the session id; codec defaults to h264")
+	if low.ID == high.ID || low.ID == auto.ID {
+		t.Fatal("bitrate must be part of the session id")
+	}
+	// Without a codec the session uses the server's default: HEVC when available.
+	if def, err := open(TranscodeOptions{Quality: "480p"}); err != nil || def.Codec != env.svc.DefaultCodec() {
+		t.Fatalf("default codec: %v %+v", err, def)
+	}
+	wantDefault := CodecH264
+	if slices.Contains(env.svc.Codecs(), CodecH265) {
+		wantDefault = CodecH265
+	}
+	if env.svc.DefaultCodec() != wantDefault {
+		t.Fatalf("DefaultCodec = %s, want %s", env.svc.DefaultCodec(), wantDefault)
 	}
 	pl, _ := fetch(t, env, low, 1, 1, filepath.Join(out, "low"))
 	ph, _ := fetch(t, env, high, 1, 1, filepath.Join(out, "high"))

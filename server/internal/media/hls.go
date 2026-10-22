@@ -81,7 +81,7 @@ const (
 type TranscodeOptions struct {
 	Quality string // key of Qualities; unknown values fall back to 720p
 	Bitrate int    // target video bitrate in kbit/s; 0 picks one from the quality
-	Codec   string // CodecH264 (default) or CodecH265
+	Codec   string // CodecH264 or CodecH265; empty picks DefaultCodec
 	Audio   int    // audio track index
 }
 
@@ -259,7 +259,7 @@ func (s *Service) CreateSession(ctx context.Context, userID uint, username, real
 	}
 	codec := opts.Codec
 	if codec == "" {
-		codec = CodecH264
+		codec = s.DefaultCodec()
 	}
 	if !slices.Contains(s.Codecs(), codec) {
 		return nil, ErrUnsupportedCodec

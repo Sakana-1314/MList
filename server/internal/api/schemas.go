@@ -139,7 +139,7 @@ type TranscodeRequest struct {
 	Path       string `json:"path" binding:"required"`                  // 视频文件的虚拟路径
 	Quality    string `json:"quality" enums:"original,1080p,720p,480p"` // 输出画质
 	Bitrate    int    `json:"bitrate"`                                  // 视频码率（kbps），200 至 80000；0 或省略表示按画质自动选择
-	Codec      string `json:"codec" enums:"h264,h265"`                  // 输出视频编码，省略为 h264；可用值见 MediaInfoResponse.transcode_codecs
+	Codec      string `json:"codec" enums:"h264,h265"`                  // 输出视频编码；省略时服务器支持 HEVC 则用 h265，否则 h264。可用值见 MediaInfoResponse.transcode_codecs
 	AudioTrack int    `json:"audio_track"`                              // 音轨序号（MediaInfo.audio 下标），0 为第 1 条
 }
 
