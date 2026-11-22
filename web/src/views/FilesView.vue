@@ -53,7 +53,7 @@ import { usePrefsStore } from '@/stores/prefs'
 import { useUploadsStore } from '@/stores/uploads'
 import { useIsMobile } from '@/composables/useIsMobile'
 import { useCopy } from '@/composables/useCopy'
-import { baseName, filesRoute, isAncestor, joinPath, normalizePath, validateName } from '@/utils/path'
+import { baseName, filesRoute, isAncestor, joinPath, normalizePath, parentPath, validateName } from '@/utils/path'
 import { isPreviewable } from '@/utils/fileKind'
 import { formatSize } from '@/utils/format'
 import { downloadMany } from '@/utils/download'
@@ -195,19 +195,11 @@ function onSelect(entry: Entry, ev: MouseEvent): void {
     const a = list.findIndex((e) => e.path === anchor)
     const b = list.findIndex((e) => e.path === entry.path)
     if (a >= 0 && b >= 0) {
-      const range = list.slice(Math.min(a, b), Math.max(a, b) + 1).map((e) => e.path)
-      selected.value = ev.ctrlKey || ev.metaKey ? Array.from(new Set([...selected.value, ...range])) : range
+      selected.value = list.slice(Math.min(a, b), Math.max(a, b) + 1).map((e) => e.path)
       return
     }
   }
-  if (ev.ctrlKey || ev.metaKey) {
-    const set = new Set(selected.value)
-    if (set.has(entry.path)) set.delete(entry.path)
-    else set.add(entry.path)
-    selected.value = Array.from(set)
-  } else {
-    selected.value = [entry.path]
-  }
+  selected.value = [entry.path]
   anchor = entry.path
 }
 
@@ -237,6 +229,14 @@ function open(entry: Entry): void {
     previewIndex.value = 0
   }
   previewShow.value = true
+}
+
+/** 在新标签页打开：文件夹进入目录，文件打开预览（复用 ?preview= 路由参数）。 */
+function openInNewTab(entry: Entry): void {
+  const target = entry.is_dir
+    ? filesRoute(entry.path)
+    : filesRoute(parentPath(entry.path), { preview: entry.name })
+  window.open(router.resolve(target).href, '_blank', 'noopener')
 }
 
 function openPreviewFromQuery(): void {
@@ -793,6 +793,7 @@ const emptyText = computed(() => {
           :is-root="isRoot"
           :compact="isMobile"
           @open="open"
+          @open-new="openInNewTab"
           @select="onSelect"
           @contextmenu="showCtx"
         >
@@ -806,6 +807,7 @@ const emptyText = computed(() => {
             :entries="sorted"
             :is-root="isRoot"
             @open="open"
+            @open-new="openInNewTab"
             @select="onSelect"
             @contextmenu="showCtx"
           >
