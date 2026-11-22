@@ -14,6 +14,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:selected': [keys: string[]]
   open: [entry: Entry]
+  'open-new': [entry: Entry]
   select: [entry: Entry, ev: MouseEvent]
   contextmenu: [entry: Entry, ev: MouseEvent]
 }>()
@@ -55,7 +56,12 @@ function toggle(e: Entry, checked: boolean): void {
 }
 
 function onClick(e: Entry, ev: MouseEvent): void {
-  if (ev.ctrlKey || ev.metaKey || ev.shiftKey) {
+  // Ctrl/Cmd+点击：浏览器新标签页打开；Shift+点击：范围选择
+  if (ev.ctrlKey || ev.metaKey) {
+    emit('open-new', e)
+    return
+  }
+  if (ev.shiftKey) {
     emit('select', e, ev)
     return
   }

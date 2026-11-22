@@ -35,6 +35,7 @@ const emit = defineEmits<{
   'update:selected': [keys: string[]]
   'update:sort': [s: SortState]
   open: [entry: Entry]
+  'open-new': [entry: Entry]
   select: [entry: Entry, ev: MouseEvent]
   contextmenu: [entry: Entry, ev: MouseEvent]
 }>()
@@ -67,7 +68,8 @@ const columns = computed<DataTableColumns<Entry>>(() => {
                 title: row.name,
                 onClick: (e: MouseEvent) => {
                   e.stopPropagation()
-                  emit('open', row)
+                  if (e.ctrlKey || e.metaKey) emit('open-new', row)
+                  else emit('open', row)
                 },
               },
               row.name,
@@ -147,7 +149,9 @@ function rowProps(row: Entry) {
     onClick: (e: MouseEvent) => {
       const t = e.target as HTMLElement
       if (t.closest('.n-checkbox')) return
-      emit('select', row, e)
+      // Ctrl/Cmd+点击：新标签页打开；其余点击交给父组件做选择
+      if (e.ctrlKey || e.metaKey) emit('open-new', row)
+      else emit('select', row, e)
     },
     onDblclick: (e: MouseEvent) => {
       const t = e.target as HTMLElement
